@@ -4,6 +4,7 @@ import { BasePlugin } from 'vatom-spaces-plugins'
  * Vatom Moves Plugin
  * Add life to the metaverse with this expansive avatar animations plugin!
  * @license MIT
+ * @author Leone Amurri
  */
 export default class MyPlugin extends BasePlugin {
 
@@ -11,11 +12,11 @@ export default class MyPlugin extends BasePlugin {
   static name = "Vatom Moves Plugin"
   static description = "Add life to the metaverse with this expansive avatar animations plugin!"
 
-  // Animation mapping: keys are the base names (without the "humanoid." prefix)
+  // Animation mapping: keys are base names (without the "humanoid." prefix)
   animationMapping = {
     "wave":         { friendly: "Wave", loop: false },
-    "thumbsup":     { friendly: "Thumbs Up", loop: false },
-    "thumbsdown":   { friendly: "Thumbs Down", loop: false },
+    "thumbsup":     { friendly: "Yes", loop: false },
+    "thumbsdown":   { friendly: "No", loop: false },
     "clapping":     { friendly: "Clap", loop: true },
     "shrug":        { friendly: "Shrug", loop: false },
     "cheer":        { friendly: "Cheer", loop: false },
@@ -39,44 +40,49 @@ export default class MyPlugin extends BasePlugin {
     "cabbagedance": { friendly: "Cabbage Patch", loop: true }
   };
 
-  // Store popup ID so we can later close the popup.
   popupID = null;
 
   onLoad() {
-    // Register the master animations asset.
-    this.objects.registerAnimations(this.paths.absolute('masteranims.glb'));
-    
-    // Register a menu button labeled "Animations" to open the radial menu.
+    // Register the updated animations asset.
+    this.objects.registerAnimations(this.paths.absolute('masteranimsv2.glb'));
+
+    // Register the menu button labeled "Animations" with the icon "movesthumbnail.png"
     this.menus.register({
-      icon: '',
+      icon: this.paths.absolute('movesthumbnail.png'),
       text: 'Animations',
       action: () => this.showRadialMenu()
     });
-    
-    // Use the Spaces hooks API to capture keydown events.
+
+    // Listen for key down events via the Spaces hook.
     this.hooks.addHandler('controls.key.down', this.onKeyDown.bind(this));
   }
 
   onKeyDown(evt) {
-    // Define movement keys.
     const movementKeys = [
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
       'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'
     ];
     if (movementKeys.includes(evt.code)) {
-      // Immediately return focus and cancel any active animation.
       this.menus.returnFocus();
       this.user.overrideAvatarAnimation(null).catch(() => {});
-      return;
     }
-    // Open the radial menu when "G" is pressed.
+    // Hotkeys for specific radial menus:
+    if (evt.code === 'KeyR') {
+      this.showRadialMenu(0);
+    }
     if (evt.code === 'KeyG') {
-      this.showRadialMenu();
+      this.showRadialMenu(1);
+    }
+    if (evt.code === 'KeyB') {
+      this.showRadialMenu(2);
     }
   }
 
-  async showRadialMenu() {
-    const radialURL = this.paths.absolute('ui/radial.html');
+  async showRadialMenu(desiredCategory = null) {
+    let radialURL = this.paths.absolute('ui/radial.html');
+    if (desiredCategory !== null) {
+      radialURL += "?cat=" + desiredCategory;
+    }
     this.popupID = await this.menus.displayPopup({
       title: 'Animations',
       panel: {
@@ -105,13 +111,14 @@ export default class MyPlugin extends BasePlugin {
       this.user.overrideAvatarAnimation({
         animation: animationKey,
         loop: true,
-        cancel_mode: 'none',
+        cancel_mode: 'immediate',
         fixed_movement: { x: 0, y: 0, z: 0 }
       }).catch(() => {});
     } else {
       this.user.overrideAvatarAnimation({
         animation: animationKey,
         loop: false,
+        cancel_mode: 'immediate',
         fixed_movement: { x: 0, y: 0, z: 0 }
       }).then(finished => {
         if (finished) {
