@@ -12,7 +12,7 @@ export default class MyPlugin extends BasePlugin {
   static name = "Vatom Moves Plugin"
   static description = "Add life to the metaverse with this expansive avatar animations plugin!"
 
-  // Animation mapping: keys are base names (without "humanoid." prefix)
+  // Animation mapping: keys are base names (without the "humanoid." prefix)
   animationMapping = {
     "wave":         { friendly: "Wave", loop: false },
     "thumbsup":     { friendly: "Yes", loop: false },
@@ -46,14 +46,14 @@ export default class MyPlugin extends BasePlugin {
     // Register the updated animations asset.
     this.objects.registerAnimations(this.paths.absolute('masteranimsv2.glb'));
 
-    // Register the menu button labeled "Animations".
+    // Register the menu button labeled "Animations" with the runtime icon.
     this.menus.register({
-      icon: '',
+      icon: this.paths.absolute('movesthumbnail.png'),
       text: 'Animations',
       action: () => this.showRadialMenu()
     });
 
-    // Use the Spaces hook for keydown events.
+    // Listen for key down events using the Spaces hooks.
     this.hooks.addHandler('controls.key.down', this.onKeyDown.bind(this));
   }
 
@@ -62,19 +62,41 @@ export default class MyPlugin extends BasePlugin {
       'KeyW', 'KeyA', 'KeyS', 'KeyD',
       'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'
     ];
+    if (evt.code === 'Escape') {
+      if (this.popupID) {
+        this.menus.closePopup(this.popupID);
+        this.popupID = null;
+      }
+      return;
+    }
     if (movementKeys.includes(evt.code)) {
+      if (this.popupID) {
+        this.menus.closePopup(this.popupID);
+        this.popupID = null;
+      }
       this.menus.returnFocus();
       this.user.overrideAvatarAnimation(null).catch(() => {});
+      return;
     }
-    // Multiple hotkeys to open specific radial menus:
-    // R for Basic (category 0), G for Gestures (category 1), B for Dance (category 2)
     if (evt.code === 'KeyR') {
+      if (this.popupID) {
+        this.menus.closePopup(this.popupID);
+        this.popupID = null;
+      }
       this.showRadialMenu(0);
     }
     if (evt.code === 'KeyG') {
+      if (this.popupID) {
+        this.menus.closePopup(this.popupID);
+        this.popupID = null;
+      }
       this.showRadialMenu(1);
     }
     if (evt.code === 'KeyB') {
+      if (this.popupID) {
+        this.menus.closePopup(this.popupID);
+        this.popupID = null;
+      }
       this.showRadialMenu(2);
     }
   }
@@ -116,7 +138,6 @@ export default class MyPlugin extends BasePlugin {
         fixed_movement: { x: 0, y: 0, z: 0 }
       }).catch(() => {});
     } else {
-      // For one-shot animations, use immediate cancel_mode so they can be interrupted.
       this.user.overrideAvatarAnimation({
         animation: animationKey,
         loop: false,
